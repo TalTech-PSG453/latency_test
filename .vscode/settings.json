@@ -1,0 +1,9 @@
+{
+    "[cpp]":{
+        "editor.tabSize": 4
+    },
+    "files.associations": {
+        "algorithm": "cpp",
+        "chrono": "cpp"
+    }
+}

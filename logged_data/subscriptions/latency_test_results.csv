@@ -1,0 +1,2 @@
+topic,received(#),lost(#),mean[us],max_latency[us],min_latency[us]
+/tb_tm/voltage,1978,0,714,4652,482
