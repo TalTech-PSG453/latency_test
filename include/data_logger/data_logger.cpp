@@ -1,12 +1,11 @@
-#include "data_logger.hpp" // header in local directory
-#include <iostream> // header in standard library
+#include "data_logger.hpp"
+#include <iostream>
 #include <vector>
 #include <string>
 #include <numeric>
 #include <algorithm>
 #include <fstream>
 
-/* careful with this one*/
 using namespace DataLogger;
 
 std::vector<PublisherLogger*> PublisherLogger::loggerList;
@@ -51,21 +50,6 @@ PublisherLogger::PublisherLogger(std::string topic_name)
     loggerList.push_back(this);
 }
 
-// according to this https://github.com/irobot-ros/ros2-performance/tree/master/performances/irobot-benchmark
-/*
-SubscriptionLogger::get_late(float period)
-{
-    
-        min(0.2*period, 5ms)
-    
-}
-SubscriptionLogger::get_too_late(float period)
-{
-    
-        max(period, 50ms)
-    
-}
-*/
 uint64_t SubscriptionLogger::get_mean()
 {
     uint64_t average = std::accumulate(time_diffs.begin(), time_diffs.end(), 0.0) / time_diffs.size();
@@ -84,6 +68,14 @@ uint64_t SubscriptionLogger::get_min_latency()
     double min_latency = *std::min_element(time_diffs.begin(), time_diffs.end());
     return min_latency;
 }
+
+/** Iterates through lists of loggers, calculating latencies and stores them in separate files
+ *  per logger type.
+ * 
+ *  @param filename The name of the file to be written to
+ *  @return nothing
+ * 
+ */
 
 void DataLogger::save_logged_data(std::string filename)
 {
@@ -122,4 +114,22 @@ void DataLogger::save_logged_data(std::string filename)
         }
         fRecordedPubs.close();
     }
+
+    /*
+    * Not implemented.
+    * according to this https://github.com/irobot-ros/ros2-performance/tree/master/performances/irobot-benchmark
+
+    SubscriptionLogger::get_late(float period)
+    {
+        
+            min(0.2*period, 5ms)
+        
+    }
+    SubscriptionLogger::get_too_late(float period)
+    {
+        
+            max(period, 50ms)
+        
+    }
+    */
 }

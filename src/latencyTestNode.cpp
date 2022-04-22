@@ -3,7 +3,6 @@
 #include <chrono>
 #include <ratio>
 #include <memory>
-#include <functional>
 #include <algorithm>
 
 #include "rclcpp/rclcpp.hpp"
@@ -30,12 +29,15 @@ class LatencyTestNode : public rclcpp::Node
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LatencyTestNode initialized");
     }
 
+  private:
+    rclcpp::Subscription<digital_twin_msgs::msg::SupplyInput>::SharedPtr InputSubscriber_;
+
     void inputCallback(const digital_twin_msgs::msg::SupplyInput::SharedPtr msg)
     {
       if(msg->seq_id == p_input_sub->next_id) {
         p_input_sub->recv_counter += 1;
         rclcpp::Duration diff = rclcpp::Node::now() - msg->stamp;
-        auto num_of_us = diff.to_chrono<std::chrono::duration<uint64_t, std::micro>>();
+        auto num_of_us = diff.to_chrono<std::chrono::microseconds>();
         p_input_sub->time_diffs.push_back(num_of_us.count());
       } else {
         p_input_sub->lost_count += 1;
@@ -43,17 +45,6 @@ class LatencyTestNode : public rclcpp::Node
       p_input_sub->next_id = msg->seq_id + 1;
     }
 
-  private:
-    rclcpp::Subscription<digital_twin_msgs::msg::SupplyInput>::SharedPtr InputSubscriber_;
-
-/*
-    uint32_t getDifferenceInMicroseconds(std::chrono::duration<uint64_t, std::micro> difference)
-    {
-      uint32_t ns_to_us = std::chrono::duration_cast<std::chrono::microseconds>(difference.nanoseconds());
-      uint32_t s_to_us = std::chrono::duration_cast<std::chrono::microseconds>(difference.seconds());;
-      return s_to_us.count() + ns_to_us.count();
-    }
-    */
 };
 
 int main(int argc, char ** argv)
