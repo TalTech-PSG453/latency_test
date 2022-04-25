@@ -36,11 +36,17 @@ class LatencyTestNode : public rclcpp::Node
     void inputCallback(const digital_twin_msgs::msg::SupplyInput::SharedPtr msg)
     {
       if(msg->seq_id == p_input_sub->next_id) {
-        auto now = rclcpp::Node::now();
+        //auto now = rclcpp::Node::now();
+        auto now = std::chrono::system_clock::now().time_since_epoch();
+        uint64_t now_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
         p_input_sub->recv_counter += 1;
-        rclcpp::Duration diff = now - msg->stamp;
-        auto num_of_us = diff.to_chrono<std::chrono::microseconds>();
-        p_input_sub->time_diffs.push_back(num_of_us.count());
+        rclcpp::Time then = msg->stamp;
+        //auto then_micros = then.to_chrono<std::chrono::microseconds>();
+        //auto num_of_us = latency.to_chrono<std::chrono::microseconds>();
+        uint64_t then_nanoseconds = then.nanoseconds();
+        uint64_t latency = (now_nanoseconds - then_nanoseconds)/1000;
+        //std::cout << latency <<"\n";
+        p_input_sub->time_diffs.push_back(latency);
       } else {
         p_input_sub->lost_count += 1;
       }
