@@ -6,6 +6,7 @@
 #include <algorithm>
 
 #include "rclcpp/rclcpp.hpp"
+#include "rclcpp/time.hpp"
 
 #include <digital_twin_msgs/msg/supply_input.hpp>
 
@@ -21,7 +22,7 @@ class LatencyTestNode : public rclcpp::Node
 
     LatencyTestNode() : Node("latency_test_node")
     {
-      InputSubscriber_ = this->create_subscription<digital_twin_msgs::msg::SupplyInput>("/tb_tm/voltage", 100, 
+      InputSubscriber_ = this->create_subscription<digital_twin_msgs::msg::SupplyInput>("/tb_tm/voltage", 10, 
                                                     std::bind(&LatencyTestNode::inputCallback, this, std::placeholders::_1));
       p_input_sub.reset(new SubscriptionLogger("/tb_tm/voltage"));
 
@@ -35,8 +36,9 @@ class LatencyTestNode : public rclcpp::Node
     void inputCallback(const digital_twin_msgs::msg::SupplyInput::SharedPtr msg)
     {
       if(msg->seq_id == p_input_sub->next_id) {
+        auto now = rclcpp::Node::now();
         p_input_sub->recv_counter += 1;
-        rclcpp::Duration diff = rclcpp::Node::now() - msg->stamp;
+        rclcpp::Duration diff = now - msg->stamp;
         auto num_of_us = diff.to_chrono<std::chrono::microseconds>();
         p_input_sub->time_diffs.push_back(num_of_us.count());
       } else {
@@ -44,7 +46,6 @@ class LatencyTestNode : public rclcpp::Node
       }
       p_input_sub->next_id = msg->seq_id + 1;
     }
-
 };
 
 int main(int argc, char ** argv)
