@@ -8,7 +8,8 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp/time.hpp"
 
-#include <digital_twin_msgs/msg/supply_input.hpp>
+#include <digital_twin_msgs/msg/latency_test.hpp>
+#include "std_msgs/msg/u_int64.hpp"
 
 #include "data_logger/data_logger.hpp"
 
@@ -22,30 +23,41 @@ class LatencyTestNode : public rclcpp::Node
 
     LatencyTestNode() : Node("latency_test_node")
     {
-      InputSubscriber_ = this->create_subscription<digital_twin_msgs::msg::SupplyInput>("/tb_tm/voltage", 10, 
-                                                    std::bind(&LatencyTestNode::inputCallback, this, std::placeholders::_1));
-      p_input_sub.reset(new SubscriptionLogger("/tb_tm/voltage"));
+      PongPublisher_ = this->create_publisher<digital_twin_msgs::msg::LatencyTest>("/tb_tm/pong", 10);
+      
+      PingSubscriber_ = this->create_subscription<digital_twin_msgs::msg::LatencyTest>("/tb_tm/ping", 50, 
+                                                    std::bind(&LatencyTestNode::pingCallback, this, std::placeholders::_1));
+      
+      LatencySubscriber_ = this->create_subscription<std_msgs::msg::UInt64>("/tb_tm/latency_results", 100, 
+                                                    std::bind(&LatencyTestNode::latencyCallback, this, std::placeholders::_1));
+      p_input_sub.reset(new SubscriptionLogger("/tb_tm/ping"));
 
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Subscription logger initialized");
       RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "LatencyTestNode initialized");
     }
 
   private:
-    rclcpp::Subscription<digital_twin_msgs::msg::SupplyInput>::SharedPtr InputSubscriber_;
-
-    void inputCallback(const digital_twin_msgs::msg::SupplyInput::SharedPtr msg)
+    rclcpp::Publisher<digital_twin_msgs::msg::LatencyTest>::SharedPtr PongPublisher_;
+    rclcpp::Subscription<digital_twin_msgs::msg::LatencyTest>::SharedPtr PingSubscriber_;
+    rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr LatencySubscriber_;
+    digital_twin_msgs::msg::LatencyTest msg_to_send;
+    
+    void pingCallback(const digital_twin_msgs::msg::LatencyTest::SharedPtr msg)
     {
       if(msg->seq_id == p_input_sub->next_id) {
-        auto now = std::chrono::system_clock::now().time_since_epoch();
-        uint64_t now_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(now).count();
+        msg_to_send.seq_id = msg->seq_id;
+        msg_to_send.stamp = msg->stamp;
         p_input_sub->recv_counter += 1;
-        uint64_t then_nanoseconds = then.nanoseconds();
-        uint64_t latency = (now_nanoseconds - then_nanoseconds)/1000;
-        p_input_sub->time_diffs.push_back(latency);
+        PongPublisher_->publish(msg_to_send);
       } else {
         p_input_sub->lost_count += 1;
       }
       p_input_sub->next_id = msg->seq_id + 1;
+    }
+
+    void latencyCallback(const std_msgs::msg::UInt64::SharedPtr msg){
+      uint64_t latency_us = msg->data / 2;
+      p_input_sub->time_diffs.push_back(latency_us);
     }
 };
 

@@ -1,0 +1,2 @@
+topic,received(#),lost(#),mean[us],max_latency[us],min_latency[us]
+/tb_tm/ping,14201,0,451,2377,236
