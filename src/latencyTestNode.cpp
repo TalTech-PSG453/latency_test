@@ -1,3 +1,13 @@
+/**
+ * @file latencyTestNode.cpp
+ * @author Sergei Jegorov (sejego)
+ * @brief This ROS2 Node records latencies, received and lost messages, calculates
+ * min, max and meand latencies in microseconds.
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #include <iostream>
 #include <vector>
 #include <chrono>
@@ -37,11 +47,17 @@ class LatencyTestNode : public rclcpp::Node
     }
 
   private:
+    /* Declare all message types, Publishers and Subscribers */
+
     rclcpp::Publisher<digital_twin_msgs::msg::LatencyTest>::SharedPtr PongPublisher_;
     rclcpp::Subscription<digital_twin_msgs::msg::LatencyTest>::SharedPtr PingSubscriber_;
     rclcpp::Subscription<std_msgs::msg::UInt64>::SharedPtr LatencySubscriber_;
     digital_twin_msgs::msg::LatencyTest msg_to_send;
     
+    /* If the expected 'ping' message is received, it is considered received, 
+     * and is sent back to the original publisher. Then, it receives the recorded latencies
+     * and stores them in a vector of latencies
+    */
     void pingCallback(const digital_twin_msgs::msg::LatencyTest::SharedPtr msg)
     {
       if(msg->seq_id == p_input_sub->next_id) {
